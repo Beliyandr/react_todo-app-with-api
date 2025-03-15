@@ -18,7 +18,7 @@ enum FilterName {
   Completed = 'completed',
 }
 
-enum keyValue {
+enum KeyValue {
   Enter = 'Enter',
   Esc = 'Escape',
 }
@@ -48,6 +48,10 @@ export const App: React.FC = () => {
       window.clearTimeout(timerId);
       setErrorMsg('');
     }, 3000);
+  };
+
+  const checkingIsAllCompletedTodos = (allTodos: Todo[]) => {
+    return allTodos.every(todoitem => todoitem.completed);
   };
 
   useEffect(() => {
@@ -93,10 +97,6 @@ export const App: React.FC = () => {
   const activeTodos = onFilteredTodos(FilterName.Active);
   const completedTodos = onFilteredTodos(FilterName.Completed);
 
-  const checkingIsAllCompletedTodos = (allTodos: Todo[]) => {
-    return allTodos.every(todoitem => todoitem.completed);
-  };
-
   const handleCloseErrorButton = () => {
     setErrorMsg('');
   };
@@ -135,8 +135,10 @@ export const App: React.FC = () => {
       .then(deleteTodoNumber => {
         if (!deleteTodoNumber) {
           showError('Unable to delete a todo');
+
           return;
         }
+
         setTodos(prevTodos => {
           return prevTodos.filter(todoItem => todoItem.id !== id);
         });
@@ -187,6 +189,7 @@ export const App: React.FC = () => {
 
     if (isCompletedAllTodos) {
       const isNotActiveTodo = todos.filter(itemTodo => !itemTodo.completed);
+
       isNotActiveTodo.map(todoItem => {
         updateChecked(todoItem, 'all');
       });
@@ -218,11 +221,13 @@ export const App: React.FC = () => {
 
     if (isEdit) {
       setEditedTodo(null);
+
       return;
     }
 
     if (!editeTodo.title.trim()) {
       removeTodo(editeTodo.id);
+
       return;
     }
 
@@ -249,15 +254,16 @@ export const App: React.FC = () => {
 
   const onKeyClick = (
     event: React.KeyboardEvent<HTMLInputElement>,
-    editedTodo?: Todo,
+    editedTodoValue?: Todo,
   ) => {
-    if (event.key === keyValue.Enter && editedTodo) {
+    if (event.key === KeyValue.Enter && editedTodoValue) {
       event.preventDefault();
-      updateTitle(editedTodo);
+      updateTitle(editedTodoValue);
+
       return;
     }
 
-    if (event.key === keyValue.Esc) {
+    if (event.key === KeyValue.Esc) {
       setEditedTodo(null);
     }
   };
@@ -401,7 +407,10 @@ export const App: React.FC = () => {
                           'is-active': waiterLoading === todoItem.id,
                         })}
                       >
-                        <div className="modal-background has-background-white-ter" />
+                        <div
+                          className="modal-background
+                        has-background-white-ter"
+                        />
                         <div className="loader" />
                       </div>
                     </div>
