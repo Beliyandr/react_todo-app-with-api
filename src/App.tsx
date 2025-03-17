@@ -75,6 +75,12 @@ export const App: React.FC = () => {
     }
   }, [todos, errorMsg]);
 
+  useEffect(() => {
+    {
+      editedTodo && editTodoRef.current?.focus();
+    }
+  }, [editedTodo]);
+
   const onFilteredTodos = (filterName: FilterName): Todo[] => {
     switch (filterName) {
       case FilterName.All:
@@ -138,13 +144,7 @@ export const App: React.FC = () => {
   const removeTodo = (id: number) => {
     setWaiterLoading(id);
     deleteTodo(id)
-      .then(deleteTodoNumber => {
-        if (!deleteTodoNumber) {
-          showError('Unable to delete a todo');
-
-          return;
-        }
-
+      .then(() => {
         setTodos(prevTodos => {
           return prevTodos.filter(todoItem => todoItem.id !== id);
         });
@@ -190,7 +190,7 @@ export const App: React.FC = () => {
       .catch(() => showError('Unable to update a todo'))
       .finally(() => {
         setWaiterLoading(null);
-        inputRef.current?.blur();
+        setIsFocus(false);
       });
   };
 
@@ -219,6 +219,7 @@ export const App: React.FC = () => {
   };
 
   const editOndDoubleClick = (event: React.ChangeEvent<HTMLInputElement>) => {
+    editTodoRef.current?.focus();
     setEditedTodo(prev =>
       prev ? { ...prev, title: event.target.value } : null,
     );
@@ -228,7 +229,7 @@ export const App: React.FC = () => {
     const isEdit = todos.some(oldTodo => {
       return oldTodo.id === editTodo.id && oldTodo.title === editTodo.title;
     });
-
+    console.log(isEdit);
     if (isEdit) {
       setEditedTodo(null);
       setIsFocus(false);
@@ -237,12 +238,12 @@ export const App: React.FC = () => {
 
     if (!editTodo.title.trim()) {
       removeTodo(editTodo.id);
-      setIsFocus(false);
+      setIsFocus(true);
       return;
     }
 
     setWaiterLoading(editTodo.id);
-    updateTodo({ ...editTodo, title: editTodo.title.trim() })
+    return updateTodo({ ...editTodo, title: editTodo.title.trim() })
       .then(todoItem => {
         setTodos(currentTodos => {
           const newPosts = [...currentTodos];
@@ -346,7 +347,7 @@ export const App: React.FC = () => {
                         className="todo__title"
                         onDoubleClick={() => {
                           setEditedTodo(todoItem);
-                          setTimeout(() => editTodoRef.current?.focus(), 0);
+                          // setTimeout(() => editTodoRef.current?.focus(), 0);
                         }}
                       >
                         {todoItem.title}
