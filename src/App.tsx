@@ -35,6 +35,8 @@ export const App: React.FC = () => {
   const [waiterLoading, setWaiterLoading] = useState<number | null>(null);
   const [tempTodo, setTempTodo] = useState<Todo | null>(null);
 
+  const [isFocus, setIsFocus] = useState(true);
+
   const inputRef = useRef<HTMLInputElement | null>(null);
   const editTodoRef = useRef<HTMLInputElement | null>(null);
 
@@ -68,7 +70,9 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     setIsAllCompletedTots(checkingIsAllCompletedTodos(todos));
-    inputRef.current?.focus();
+    {
+      isFocus && inputRef.current?.focus();
+    }
   }, [todos, errorMsg]);
 
   const onFilteredTodos = (filterName: FilterName): Todo[] => {
@@ -121,10 +125,12 @@ export const App: React.FC = () => {
         });
         setTempTodo(null);
         setTodo('');
+        setIsFocus(true);
       })
       .catch(() => {
         showError('Unable to add a todo');
         setTempTodo(null);
+        setIsFocus(true);
       })
       .finally(() => setLoading(false));
   };
@@ -142,10 +148,12 @@ export const App: React.FC = () => {
         setTodos(prevTodos => {
           return prevTodos.filter(todoItem => todoItem.id !== id);
         });
+        setIsFocus(true);
       })
       .catch(() => showError('Unable to delete a todo'))
       .finally(() => {
         setWaiterLoading(null);
+        setIsFocus(true);
       });
   };
 
@@ -177,10 +185,12 @@ export const App: React.FC = () => {
 
           return newPosts;
         });
+        // inputRef.current?.blur();
       })
       .catch(() => showError('Unable to update a todo'))
       .finally(() => {
         setWaiterLoading(null);
+        inputRef.current?.blur();
       });
   };
 
@@ -208,36 +218,36 @@ export const App: React.FC = () => {
     });
   };
 
-  const editeOndDoubleClick = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const editOndDoubleClick = (event: React.ChangeEvent<HTMLInputElement>) => {
     setEditedTodo(prev =>
       prev ? { ...prev, title: event.target.value } : null,
     );
   };
 
-  const updateTitle = (editeTodo: Todo) => {
+  const updateTitle = (editTodo: Todo) => {
     const isEdit = todos.some(oldTodo => {
-      return oldTodo.id === editeTodo.id && oldTodo.title === editeTodo.title;
+      return oldTodo.id === editTodo.id && oldTodo.title === editTodo.title;
     });
 
     if (isEdit) {
       setEditedTodo(null);
-
+      setIsFocus(false);
       return;
     }
 
-    if (!editeTodo.title.trim()) {
-      removeTodo(editeTodo.id);
-
+    if (!editTodo.title.trim()) {
+      removeTodo(editTodo.id);
+      setIsFocus(false);
       return;
     }
 
-    setWaiterLoading(editeTodo.id);
-    updateTodo({ ...editeTodo, title: editeTodo.title.trim() })
+    setWaiterLoading(editTodo.id);
+    updateTodo({ ...editTodo, title: editTodo.title.trim() })
       .then(todoItem => {
         setTodos(currentTodos => {
           const newPosts = [...currentTodos];
           const index = newPosts.findIndex(
-            todoIndex => todoIndex.id === editeTodo.id,
+            todoIndex => todoIndex.id === editTodo.id,
           );
 
           newPosts.splice(index, 1, todoItem);
@@ -245,8 +255,13 @@ export const App: React.FC = () => {
           return newPosts;
         });
         setEditedTodo(null);
+        setIsFocus(false);
       })
-      .catch(() => showError('Unable to update a todo'))
+      .catch(() => {
+        showError('Unable to update a todo');
+        setIsFocus(false);
+        editTodoRef.current?.focus();
+      })
       .finally(() => {
         setWaiterLoading(null);
       });
@@ -304,80 +319,64 @@ export const App: React.FC = () => {
             </header>
 
             <section className="todoapp__main" data-cy="TodoList">
-              {filteredTodos?.map(todoItem =>
-                editedTodo?.id !== todoItem.id ? (
-                  <div
-                    data-cy="Todo"
-                    className={classNames('todo', {
-                      completed: todoItem.completed,
-                    })}
-                    key={todoItem.id}
-                  >
-                    <label className="todo__status-label">
-                      <input
-                        data-cy="TodoStatus"
-                        type="checkbox"
-                        className="todo__status"
-                        onChange={() => {
-                          updateChecked(todoItem);
-                        }}
-                        checked={todoItem.completed}
-                      />
-                    </label>
-
-                    <span
-                      data-cy="TodoTitle"
-                      className="todo__title"
-                      onDoubleClick={() => {
-                        setEditedTodo(todoItem);
-                        setTimeout(() => editTodoRef.current?.focus(), 0);
+              {filteredTodos?.map(todoItem => (
+                <div
+                  data-cy="Todo"
+                  className={classNames('todo', {
+                    completed: todoItem.completed,
+                  })}
+                  key={todoItem.id}
+                >
+                  <label className="todo__status-label">
+                    <input
+                      data-cy="TodoStatus"
+                      type="checkbox"
+                      className="todo__status"
+                      onChange={() => {
+                        updateChecked(todoItem);
                       }}
-                    >
-                      {todoItem.title}
-                    </span>
+                      checked={todoItem.completed}
+                    />
+                  </label>
 
-                    <button
-                      type="button"
-                      className="todo__remove"
-                      data-cy="TodoDelete"
-                      onClick={() => removeTodo(todoItem.id)}
-                    >
-                      ×
-                    </button>
+                  {editedTodo?.id !== todoItem.id ? (
+                    <>
+                      <span
+                        data-cy="TodoTitle"
+                        className="todo__title"
+                        onDoubleClick={() => {
+                          setEditedTodo(todoItem);
+                          setTimeout(() => editTodoRef.current?.focus(), 0);
+                        }}
+                      >
+                        {todoItem.title}
+                      </span>
 
-                    <div
-                      data-cy="TodoLoader"
-                      className={classNames('modal overlay', {
-                        'is-active': waiterLoading === todoItem.id,
-                      })}
-                    >
+                      <button
+                        type="button"
+                        className="todo__remove"
+                        data-cy="TodoDelete"
+                        onClick={() => removeTodo(todoItem.id)}
+                      >
+                        ×
+                      </button>
+
                       <div
-                        className="modal-background
+                        data-cy="TodoLoader"
+                        className={classNames('modal overlay', {
+                          'is-active': waiterLoading === todoItem.id,
+                        })}
+                      >
+                        <div
+                          className="modal-background
                       has-background-white-ter"
-                      />
-                      <div className="loader" />
-                    </div>
-                  </div>
-                ) : (
-                  <React.Fragment key={todoItem.id}>
-                    {/* This todo is being edited */}
-                    <div
-                      data-cy="Todo"
-                      className={classNames('todo', {
-                        completed: todoItem.completed,
-                      })}
-                    >
-                      <label className="todo__status-label">
-                        <input
-                          data-cy="TodoStatus"
-                          type="checkbox"
-                          className="todo__status"
-                          onChange={() => {
-                            updateChecked(todoItem);
-                          }}
-                          checked={todoItem.completed}
                         />
-                      </label>
+                        <div className="loader" />
+                      </div>
+                    </>
+                  ) : (
+                    <React.Fragment key={todoItem.id}>
+                      {/* This todo is being edited */}
 
                       {/* This form is shown instead of the title and remove button */}
                       <form>
@@ -396,7 +395,7 @@ export const App: React.FC = () => {
                           onKeyUp={event => onKeyClick(event)}
                           onKeyDown={event => onKeyClick(event, editedTodo)}
                           onChange={event => {
-                            editeOndDoubleClick(event);
+                            editOndDoubleClick(event);
                           }}
                         />
                       </form>
@@ -413,10 +412,10 @@ export const App: React.FC = () => {
                         />
                         <div className="loader" />
                       </div>
-                    </div>
-                  </React.Fragment>
-                ),
-              )}
+                    </React.Fragment>
+                  )}
+                </div>
+              ))}
 
               {/* This todo is in loadind state */}
               {tempTodo && (
