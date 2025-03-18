@@ -59,7 +59,7 @@
 //   useEffect(() => {
 //     setLoading(true);
 //     getTodos()
-//       .then(allTodos => {
+//       .then((allTodos: Todo[]) => {
 //         setTodos(allTodos);
 //       })
 //       .catch(() => showError('Unable to load todos'))

@@ -8,9 +8,9 @@ type Props = {
 export const TempTodoItem: React.FC<Props> = ({ tempTodo }) => {
   return (
     <div data-cy="Todo" className="todo">
-      <label className="todo__status-label">
+      <span className="todo__status-label">
         <input data-cy="TodoStatus" type="checkbox" className="todo__status" />
-      </label>
+      </span>
 
       <span data-cy="TodoTitle" className="todo__title">
         {tempTodo.title}

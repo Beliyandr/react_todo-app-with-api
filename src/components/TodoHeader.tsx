@@ -1,32 +1,25 @@
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { Todo } from '../types/Todo';
-import { addTodo, USER_ID } from '../api/todos';
 import { OptionUpdate } from '../types/OptionsType';
 
 type Props = {
   todos: Todo[];
   loading: boolean;
-  errorMsg: string;
-  updateChecked: (updatedTodo: Todo, option: OptionUpdate) => void;
-  setErrorMsg: (text: string) => void;
-  setTempTodo: (todo: Todo | null) => void;
-  setLoading: (value: boolean) => void;
   showError: (text: string) => void;
-
-  setTodos: Function;
+  changeFocus: boolean;
+  updateChecked: (updatedTodo: Todo, option: OptionUpdate) => void;
+  setTempTodo: (todo: Todo | null) => void;
+  createTodo: (todo: string) => void;
 };
 
 export const TodoHeader: React.FC<Props> = ({
   todos,
   loading,
-  errorMsg,
+  changeFocus,
   updateChecked = () => {},
-  setErrorMsg = () => {},
-  setTempTodo = () => {},
-  setLoading = () => {},
+  createTodo = () => {},
   showError = () => {},
-  setTodos = () => {},
 }) => {
   const [todo, setTodo] = useState<string>('');
 
@@ -43,12 +36,10 @@ export const TodoHeader: React.FC<Props> = ({
   }, [todos]);
 
   useEffect(() => {
-    if (!errorMsg) {
-      return;
+    {
+      changeFocus && inputRef.current?.focus();
     }
-
-    inputRef.current?.focus();
-  }, [errorMsg]);
+  }, [todos]);
 
   const toggleAllTodos = (): void => {
     const isCompletedAllTodos = todos.some(item => !item.completed);
@@ -69,43 +60,23 @@ export const TodoHeader: React.FC<Props> = ({
   };
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setErrorMsg('');
+    showError('');
     setTodo(event.target.value);
   };
 
-  const createNewTodo = (title: string): Todo => {
-    return {
-      completed: false,
-      id: 0,
-      title: title,
-      userId: USER_ID,
-    };
-  };
-
-  const createTodo = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!todo.trim()) {
-      showError('Title should not be empty');
-
+  const onCreateTodo = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      if (!todo.trim()) {
+        showError('Title should not be empty');
+        return;
+      } else {
+        createTodo(todo);
+        setTodo('');
+        showError('');
+      }
+    } else {
       return;
     }
-
-    const newTempTodo = createNewTodo(todo.trim());
-
-    setTempTodo(newTempTodo);
-    setLoading(true);
-
-    addTodo(newTempTodo)
-      .then(newTodo => {
-        setTodos((prev: Todo[]) => [...prev, newTodo]);
-        setTempTodo(null);
-        setTodo('');
-      })
-      .catch(() => {
-        showError('Unable to add a todo');
-        setTempTodo(null);
-      })
-      .finally(() => setLoading(false));
   };
 
   return (
@@ -121,7 +92,7 @@ export const TodoHeader: React.FC<Props> = ({
         />
       )}
 
-      <form onSubmit={createTodo} onReset={() => setTodo('')}>
+      <form>
         <input
           ref={inputRef}
           data-cy="NewTodoField"
@@ -131,6 +102,7 @@ export const TodoHeader: React.FC<Props> = ({
           placeholder="What needs to be done?"
           onChange={handleChange}
           disabled={loading}
+          onKeyDown={onCreateTodo}
         />
       </form>
     </header>

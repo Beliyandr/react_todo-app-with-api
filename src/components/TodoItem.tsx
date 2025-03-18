@@ -1,40 +1,51 @@
 import classNames from 'classnames';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Todo } from '../types/Todo';
 import { KeyValue, OptionUpdate } from '../types/OptionsType';
 
 type Props = {
   todoItem: Todo;
-  updateChecked?: (updatedTodo: Todo, option: OptionUpdate) => void;
-  editedTodo?: Todo | null;
-  setEditedTodo?: Function;
-  removeTodo?: Function;
-  waiterLoading?: number | null;
-  updateTitle?: Function;
+  updateChecked: (updatedTodo: Todo, option: OptionUpdate) => void;
+  removeTodo: (id: number) => void;
+  waiterLoading: number | null;
+  updateTitle: (todo: Todo) => void;
 };
 
 export const TodoItem: React.FC<Props> = ({
   todoItem,
-  editedTodo,
   waiterLoading,
   updateChecked = () => {},
-  setEditedTodo = () => {},
+
   removeTodo = () => {},
   updateTitle = () => {},
 }) => {
+  const [editedTodo, setEditedTodo] = useState<Todo | null>(null);
   const editTodoRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
-    {
-      editedTodo && editTodoRef.current?.focus();
-    }
+    editTodoRef.current?.focus();
   }, [editedTodo]);
 
   const editOndDoubleClick = (event: React.ChangeEvent<HTMLInputElement>) => {
     editTodoRef.current?.focus();
-    setEditedTodo((prev: Todo) =>
+    setEditedTodo(prev =>
       prev ? { ...prev, title: event.target.value } : null,
     );
+  };
+
+  const onUpdateTitle = (editTodo: Todo) => {
+    const isEdit =
+      editTodo.id === todoItem.id && todoItem.title === editTodo.title;
+
+    if (isEdit) {
+      setEditedTodo(null);
+
+      return;
+    }
+
+    updateTitle(editTodo);
+
+    setEditedTodo(null);
   };
 
   const onKeyClick = (
@@ -43,7 +54,7 @@ export const TodoItem: React.FC<Props> = ({
   ) => {
     if (event.key === KeyValue.Enter && editedTodoValue) {
       event.preventDefault();
-      updateTitle(editedTodoValue);
+      onUpdateTitle(editedTodoValue);
 
       return;
     }
@@ -61,6 +72,7 @@ export const TodoItem: React.FC<Props> = ({
       })}
       key={todoItem.id}
     >
+      {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
       <label className="todo__status-label">
         <input
           data-cy="TodoStatus"
@@ -96,7 +108,7 @@ export const TodoItem: React.FC<Props> = ({
             ×
           </button>
 
-          <div
+          {/* <div
             data-cy="TodoLoader"
             className={classNames('modal overlay', {
               'is-active': waiterLoading === todoItem.id,
@@ -107,7 +119,7 @@ export const TodoItem: React.FC<Props> = ({
                               has-background-white-ter"
             />
             <div className="loader" />
-          </div>
+          </div> */}
         </>
       ) : (
         <React.Fragment key={todoItem.id}>
@@ -122,7 +134,7 @@ export const TodoItem: React.FC<Props> = ({
               value={editedTodo.title}
               onBlur={event => {
                 event.preventDefault();
-                updateTitle(editedTodo);
+                onUpdateTitle(editedTodo);
               }}
               onKeyUp={event => onKeyClick(event)}
               onKeyDown={event => onKeyClick(event, editedTodo)}
@@ -131,21 +143,20 @@ export const TodoItem: React.FC<Props> = ({
               }}
             />
           </form>
-
-          <div
-            data-cy="TodoLoader"
-            className={classNames('modal overlay', {
-              'is-active': waiterLoading === todoItem.id,
-            })}
-          >
-            <div
-              className="modal-background
-                                has-background-white-ter"
-            />
-            <div className="loader" />
-          </div>
         </React.Fragment>
       )}
+      <div
+        data-cy="TodoLoader"
+        className={classNames('modal overlay', {
+          'is-active': waiterLoading === todoItem.id,
+        })}
+      >
+        <div
+          className="modal-background
+                                has-background-white-ter"
+        />
+        <div className="loader" />
+      </div>
     </div>
   );
 };

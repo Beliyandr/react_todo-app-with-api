@@ -2,7 +2,13 @@
 /* eslint-disable jsx-a11y/control-has-associated-label */
 import React, { useEffect, useState } from 'react';
 import { UserWarning } from './UserWarning';
-import { deleteTodo, getTodos, USER_ID, updateTodo } from './api/todos';
+import {
+  deleteTodo,
+  getTodos,
+  USER_ID,
+  updateTodo,
+  addTodo,
+} from './api/todos';
 import { Todo } from './types/Todo';
 import classNames from 'classnames';
 import { TodoHeader } from './components/TodoHeader';
@@ -15,8 +21,10 @@ export const App: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [todos, setTodos] = useState<Todo[]>([]);
 
-  const [tempTodo, setTempTodo] = useState<Todo | null>(null);
+  const [changeFocus, setChangeFocus] = useState(true);
 
+  const [tempTodo, setTempTodo] = useState<Todo | null>(null);
+  const [waiterLoading, setWaiterLoading] = useState<number | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterName>(FilterName.All);
 
   const showError = (text: string) => {
@@ -56,17 +64,46 @@ export const App: React.FC = () => {
   const activeTodos = onFilteredTodos(FilterName.Active);
   const completedTodos = onFilteredTodos(FilterName.Completed);
 
+  const createNewTodo = (title: string): Todo => {
+    return {
+      completed: false,
+      id: 0,
+      title: title,
+      userId: USER_ID,
+    };
+  };
+
+  const createTodo = (titleTodo: string) => {
+    const newTempTodo = createNewTodo(titleTodo.trim());
+
+    setTempTodo(newTempTodo);
+    setLoading(true);
+
+    addTodo(newTempTodo)
+      .then(newTodoFromServer => {
+        setTodos((prev: Todo[]) => [...prev, newTodoFromServer]);
+        setTempTodo(null);
+        setChangeFocus(true);
+      })
+      .catch(() => {
+        showError('Unable to add a todo');
+        setTempTodo(null);
+      })
+      .finally(() => setLoading(false));
+  };
+
   const removeTodo = (id: number) => {
-    // setWaiterLoading(id);
+    setWaiterLoading(id);
     deleteTodo(id)
       .then(() => {
         setTodos(prevTodos => {
           return prevTodos.filter(todoItem => todoItem.id !== id);
         });
+        setChangeFocus(true);
       })
       .catch(() => showError('Unable to delete a todo'))
       .finally(() => {
-        // setWaiterLoading(null);
+        setWaiterLoading(null);
       });
   };
 
@@ -80,7 +117,7 @@ export const App: React.FC = () => {
       updateCompleted = true;
     }
 
-    // setWaiterLoading(updatedTodo.id);
+    setWaiterLoading(updatedTodo.id);
     updateTodo({ ...updatedTodo, completed: updateCompleted })
       .then(todoItem => {
         setTodos(currentTodos => {
@@ -93,11 +130,41 @@ export const App: React.FC = () => {
 
           return newPosts;
         });
-        // inputRef.current?.blur();
+        setChangeFocus(false);
       })
       .catch(() => showError('Unable to update a todo'))
       .finally(() => {
-        // setWaiterLoading(null);
+        setWaiterLoading(null);
+      });
+  };
+
+  const updateTitle = (editTodo: Todo) => {
+    if (!editTodo.title.trim()) {
+      removeTodo(editTodo.id);
+
+      return;
+    }
+
+    setWaiterLoading(editTodo.id);
+    updateTodo({ ...editTodo, title: editTodo.title.trim() })
+      .then(todoItem => {
+        setTodos((currentTodos: Todo[]) => {
+          const newPosts = [...currentTodos];
+          const index = newPosts.findIndex(
+            todoIndex => todoIndex.id === editTodo.id,
+          );
+
+          newPosts.splice(index, 1, todoItem);
+
+          return newPosts;
+        });
+        setChangeFocus(false);
+      })
+      .catch(() => {
+        showError('Unable to update a todo');
+      })
+      .finally(() => {
+        setWaiterLoading(null);
       });
   };
 
@@ -105,6 +172,10 @@ export const App: React.FC = () => {
     todosCompleted.forEach(itemTodo => {
       removeTodo(itemTodo.id);
     });
+  };
+
+  const handleCloseErrorButton = () => {
+    setErrorMsg('');
   };
 
   return (
@@ -119,13 +190,11 @@ export const App: React.FC = () => {
             <TodoHeader
               todos={todos}
               loading={loading}
-              showError={showError}
-              setLoading={setLoading}
-              errorMsg={errorMsg}
               updateChecked={updateChecked}
-              setErrorMsg={setErrorMsg}
+              createTodo={createTodo}
+              changeFocus={changeFocus}
+              showError={showError}
               setTempTodo={setTempTodo}
-              setTodos={setTodos}
             />
 
             <TodoList
@@ -135,7 +204,8 @@ export const App: React.FC = () => {
               showError={showError}
               removeTodo={removeTodo}
               updateChecked={updateChecked}
-              setTodos={setTodos}
+              updateTitle={updateTitle}
+              waiterLoading={waiterLoading}
             />
 
             {todos?.length > 0 && (
@@ -194,7 +264,7 @@ export const App: React.FC = () => {
 
           <ErrorNotification
             errorMsg={errorMsg}
-            handleCloseErrorButton={async () => setErrorMsg('')}
+            handleCloseErrorButton={handleCloseErrorButton}
           />
         </div>
       )}

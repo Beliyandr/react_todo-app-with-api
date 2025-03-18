@@ -3,7 +3,7 @@ import React from 'react';
 
 type Props = {
   errorMsg: string;
-  handleCloseErrorButton: () => {};
+  handleCloseErrorButton: () => void;
 };
 
 export const ErrorNotification: React.FC<Props> = ({
