@@ -43,7 +43,10 @@ export const TodoHeader: React.FC<Props> = ({
   }, [todos]);
 
   useEffect(() => {
-    if (!errorMsg) return;
+    if (!errorMsg) {
+      return;
+    }
+
     inputRef.current?.focus();
   }, [errorMsg]);
 
@@ -83,6 +86,7 @@ export const TodoHeader: React.FC<Props> = ({
     event.preventDefault();
     if (!todo.trim()) {
       showError('Title should not be empty');
+
       return;
     }
 

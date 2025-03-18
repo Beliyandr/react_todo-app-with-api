@@ -57,7 +57,6 @@ export const App: React.FC = () => {
   const completedTodos = onFilteredTodos(FilterName.Completed);
 
   const removeTodo = (id: number) => {
-    console.log(id);
     // setWaiterLoading(id);
     deleteTodo(id)
       .then(() => {

@@ -1,7 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { Todo } from '../types/Todo';
-import classNames from 'classnames';
-import { KeyValue, OptionUpdate } from '../types/OptionsType';
+import { OptionUpdate } from '../types/OptionsType';
 import { updateTodo } from '../api/todos';
 import { TodoItem } from './TodoItem';
 import { TempTodoItem } from './TempTodoItem';
@@ -32,6 +31,7 @@ export const TodoList: React.FC<Props> = ({
     const isEdit = todos.some(oldTodo => {
       return oldTodo.id === editTodo.id && oldTodo.title === editTodo.title;
     });
+
     console.log(isEdit);
     if (isEdit) {
       setEditedTodo(null);

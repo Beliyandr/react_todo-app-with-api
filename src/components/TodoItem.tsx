@@ -1,5 +1,5 @@
 import classNames from 'classnames';
-import React, { forwardRef, useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Todo } from '../types/Todo';
 import { KeyValue, OptionUpdate } from '../types/OptionsType';
 
