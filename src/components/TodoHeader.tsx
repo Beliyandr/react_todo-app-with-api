@@ -6,21 +6,21 @@ import { OptionUpdate } from '../types/OptionsType';
 type Props = {
   todos: Todo[];
   loading: boolean;
-  showError: (text: string | null) => void;
   changeFocus: boolean;
-  updateChecked: (updatedTodo: Todo, option: OptionUpdate) => void;
-  createTodo: (todo: string) => void;
   errorMsg: string | null;
+  showError: (text: string | null) => void;
+  updateChecked: (updatedTodo: Todo, option: OptionUpdate) => void;
+  createTodo: (todo: string) => Promise<string>;
 };
 
 export const TodoHeader: React.FC<Props> = ({
   todos,
   loading,
   changeFocus,
-  updateChecked = () => {},
-  createTodo = () => {},
-  showError = () => {},
   errorMsg,
+  updateChecked = () => {},
+  createTodo,
+  showError = () => {},
 }) => {
   const [todo, setTodo] = useState<string>('');
 
@@ -33,13 +33,13 @@ export const TodoHeader: React.FC<Props> = ({
   };
 
   useEffect(() => {
-    setIsAllCompletedTots(checkingIsAllCompletedTodos(todos));
-  }, [todos]);
+    if (changeFocus) {
+      inputRef.current?.focus();
+    }
+  }, [todos, errorMsg, changeFocus]);
 
   useEffect(() => {
-    {
-      changeFocus && inputRef.current?.focus();
-    }
+    setIsAllCompletedTots(checkingIsAllCompletedTodos(todos));
   }, [todos]);
 
   const toggleAllTodos = (): void => {
@@ -69,10 +69,16 @@ export const TodoHeader: React.FC<Props> = ({
     event.preventDefault();
     if (!todo.trim()) {
       showError('Title should not be empty');
+
       return;
     } else {
-      createTodo(todo);
+      createTodo(todo).then(text => {
+        if (text === todo) {
+          setTodo('');
+        }
+      });
     }
+
     return;
   };
 

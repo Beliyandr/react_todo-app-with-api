@@ -28,6 +28,12 @@ export const App: React.FC = () => {
   const [activeFilter, setActiveFilter] = useState<FilterName>(FilterName.All);
 
   const showError = (text: string | null) => {
+    if (text === null) {
+      setErrorMsg(null);
+
+      return;
+    }
+
     setErrorMsg(text);
     const timerId = window.setTimeout(() => {
       window.clearTimeout(timerId);
@@ -79,33 +85,46 @@ export const App: React.FC = () => {
     setTempTodo(newTempTodo);
     setLoading(true);
 
-    addTodo(newTempTodo)
+    return addTodo(newTempTodo)
       .then(newTodoFromServer => {
         setTodos((prev: Todo[]) => [...prev, newTodoFromServer]);
         setTempTodo(null);
-        setChangeFocus(true);
+
+        return newTodoFromServer.title;
       })
-      .catch(() => {
+      .catch(text => {
         showError('Unable to add a todo');
         setTempTodo(null);
+
+        return text;
       })
       .finally(() => {
         setLoading(false);
+        setChangeFocus(true);
       });
   };
 
-  const removeTodo = (id: number) => {
+  const removeTodo = async (id: number): Promise<string> => {
     setWaiterLoading(id);
-    deleteTodo(id)
+
+    return deleteTodo(id)
       .then(() => {
         setTodos(prevTodos => {
           return prevTodos.filter(todoItem => todoItem.id !== id);
         });
         setChangeFocus(true);
-        setWaiterLoading(null);
+
+        return 'success';
       })
-      .catch(() => showError('Unable to delete a todo'))
-      .finally(() => {});
+      .catch(() => {
+        showError('Unable to delete a todo');
+        setChangeFocus(false);
+
+        return 'error';
+      })
+      .finally(() => {
+        setWaiterLoading(null);
+      });
   };
 
   const updateChecked = (
@@ -139,15 +158,16 @@ export const App: React.FC = () => {
       });
   };
 
-  const updateTitle = (editTodo: Todo) => {
+  const updateTitle = async (editTodo: Todo): Promise<string> => {
     if (!editTodo.title.trim()) {
       removeTodo(editTodo.id);
 
-      return;
+      return '';
     }
 
     setWaiterLoading(editTodo.id);
-    updateTodo({ ...editTodo, title: editTodo.title.trim() })
+
+    return updateTodo({ ...editTodo, title: editTodo.title.trim() })
       .then(todoItem => {
         setTodos((currentTodos: Todo[]) => {
           const newPosts = [...currentTodos];
@@ -160,22 +180,24 @@ export const App: React.FC = () => {
           return newPosts;
         });
         setChangeFocus(false);
+
+        return todoItem.title;
       })
       .catch(() => {
         showError('Unable to update a todo');
+
+        return 'error';
       })
       .finally(() => {
         setWaiterLoading(null);
+        setChangeFocus(false);
       });
   };
 
   const clearCompleted = (todosCompleted: Todo[]): void => {
-    Promise.all(todosCompleted.map(todo => deleteTodo(todo.id)))
-      .then(() => {
-        setTodos(prevTodos => prevTodos.filter(todo => !todo.completed));
-        setWaiterLoading(null);
-      })
-      .catch(() => showError('Unable to delete completed todos'));
+    todosCompleted.forEach(itemTodo => {
+      removeTodo(itemTodo.id);
+    });
   };
 
   const handleCloseErrorButton = () => {

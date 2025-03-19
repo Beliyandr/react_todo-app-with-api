@@ -6,18 +6,17 @@ import { KeyValue, OptionUpdate } from '../types/OptionsType';
 type Props = {
   todoItem: Todo;
   updateChecked: (updatedTodo: Todo, option: OptionUpdate) => void;
-  removeTodo: (id: number) => void;
+  removeTodo: (id: number) => Promise<string>;
   waiterLoading: number | null;
-  updateTitle: (todo: Todo) => void;
+  updateTitle: (todo: Todo) => Promise<string>;
 };
 
 export const TodoItem: React.FC<Props> = ({
   todoItem,
   waiterLoading,
   updateChecked = () => {},
-
-  removeTodo = () => {},
-  updateTitle = () => {},
+  removeTodo,
+  updateTitle,
 }) => {
   const [editedTodo, setEditedTodo] = useState<Todo | null>(null);
   const editTodoRef = useRef<HTMLInputElement | null>(null);
@@ -43,18 +42,32 @@ export const TodoItem: React.FC<Props> = ({
       return;
     }
 
-    updateTitle(editTodo);
-
-    setEditedTodo(null);
+    updateTitle(editTodo)
+      .then(todoEdited => {
+        if (todoEdited === 'error') {
+          editTodoRef.current?.focus();
+        } else {
+          setEditedTodo(null);
+        }
+      })
+      .finally(() => {});
   };
 
-  const onKeyClick = (
+  const onKeyClick = async (
     event: React.KeyboardEvent<HTMLInputElement>,
     editedTodoValue?: Todo,
   ) => {
     if (event.key === KeyValue.Enter && editedTodoValue) {
       event.preventDefault();
-      onUpdateTitle(editedTodoValue);
+      if (!editedTodoValue.title.trim()) {
+        removeTodo(editedTodoValue.id).then(text => {
+          if (text === 'error') {
+            editTodoRef.current?.focus();
+          }
+        });
+      } else {
+        onUpdateTitle(editedTodoValue);
+      }
 
       return;
     }
@@ -107,19 +120,6 @@ export const TodoItem: React.FC<Props> = ({
           >
             ×
           </button>
-
-          {/* <div
-            data-cy="TodoLoader"
-            className={classNames('modal overlay', {
-              'is-active': waiterLoading === todoItem.id,
-            })}
-          >
-            <div
-              className="modal-background
-                              has-background-white-ter"
-            />
-            <div className="loader" />
-          </div> */}
         </>
       ) : (
         <React.Fragment key={todoItem.id}>
@@ -134,7 +134,15 @@ export const TodoItem: React.FC<Props> = ({
               value={editedTodo.title}
               onBlur={event => {
                 event.preventDefault();
-                onUpdateTitle(editedTodo);
+                if (!editedTodo.title.trim()) {
+                  removeTodo(editedTodo.id).then(text => {
+                    if (text === 'error') {
+                      editTodoRef.current?.focus();
+                    }
+                  });
+                } else {
+                  onUpdateTitle(editedTodo);
+                }
               }}
               onKeyUp={event => onKeyClick(event)}
               onKeyDown={event => onKeyClick(event, editedTodo)}

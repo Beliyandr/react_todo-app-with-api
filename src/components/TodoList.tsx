@@ -8,17 +8,17 @@ type Props = {
   todos: Todo[] | [];
   tempTodo: Todo | null;
   filteredTodos: Todo[] | null;
-  removeTodo: (id: number) => void;
+  removeTodo: (id: number) => Promise<string>;
   updateChecked: (updatedTodo: Todo, option: OptionUpdate) => void;
   showError: (text: string) => void;
-  updateTitle: (todo: Todo) => void;
+  updateTitle: (todo: Todo) => Promise<string>;
   waiterLoading: number | null;
 };
 
 export const TodoList: React.FC<Props> = ({
   tempTodo,
   filteredTodos,
-  removeTodo = () => {},
+  removeTodo,
   updateChecked = () => {},
   updateTitle,
   waiterLoading,
