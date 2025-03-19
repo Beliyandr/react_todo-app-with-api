@@ -2,7 +2,7 @@ import classNames from 'classnames';
 import React from 'react';
 
 type Props = {
-  errorMsg: string;
+  errorMsg: string | null;
   handleCloseErrorButton: () => void;
 };
 

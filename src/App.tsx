@@ -18,7 +18,7 @@ import { TodoList } from './components/TodoList';
 
 export const App: React.FC = () => {
   const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string>('');
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [todos, setTodos] = useState<Todo[]>([]);
 
   const [changeFocus, setChangeFocus] = useState(true);
@@ -27,11 +27,11 @@ export const App: React.FC = () => {
   const [waiterLoading, setWaiterLoading] = useState<number | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterName>(FilterName.All);
 
-  const showError = (text: string) => {
+  const showError = (text: string | null) => {
     setErrorMsg(text);
     const timerId = window.setTimeout(() => {
       window.clearTimeout(timerId);
-      setErrorMsg('');
+      setErrorMsg(null);
     }, 3000);
   };
 
@@ -73,7 +73,7 @@ export const App: React.FC = () => {
     };
   };
 
-  const createTodo = (titleTodo: string) => {
+  const createTodo = async (titleTodo: string) => {
     const newTempTodo = createNewTodo(titleTodo.trim());
 
     setTempTodo(newTempTodo);
@@ -89,7 +89,9 @@ export const App: React.FC = () => {
         showError('Unable to add a todo');
         setTempTodo(null);
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        setLoading(false);
+      });
   };
 
   const removeTodo = (id: number) => {
@@ -100,11 +102,10 @@ export const App: React.FC = () => {
           return prevTodos.filter(todoItem => todoItem.id !== id);
         });
         setChangeFocus(true);
+        setWaiterLoading(null);
       })
       .catch(() => showError('Unable to delete a todo'))
-      .finally(() => {
-        setWaiterLoading(null);
-      });
+      .finally(() => {});
   };
 
   const updateChecked = (
@@ -169,13 +170,16 @@ export const App: React.FC = () => {
   };
 
   const clearCompleted = (todosCompleted: Todo[]): void => {
-    todosCompleted.forEach(itemTodo => {
-      removeTodo(itemTodo.id);
-    });
+    Promise.all(todosCompleted.map(todo => deleteTodo(todo.id)))
+      .then(() => {
+        setTodos(prevTodos => prevTodos.filter(todo => !todo.completed));
+        setWaiterLoading(null);
+      })
+      .catch(() => showError('Unable to delete completed todos'));
   };
 
   const handleCloseErrorButton = () => {
-    setErrorMsg('');
+    setErrorMsg(null);
   };
 
   return (
@@ -194,7 +198,7 @@ export const App: React.FC = () => {
               createTodo={createTodo}
               changeFocus={changeFocus}
               showError={showError}
-              setTempTodo={setTempTodo}
+              errorMsg={errorMsg}
             />
 
             <TodoList

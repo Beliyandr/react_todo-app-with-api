@@ -6,11 +6,11 @@ import { OptionUpdate } from '../types/OptionsType';
 type Props = {
   todos: Todo[];
   loading: boolean;
-  showError: (text: string) => void;
+  showError: (text: string | null) => void;
   changeFocus: boolean;
   updateChecked: (updatedTodo: Todo, option: OptionUpdate) => void;
-  setTempTodo: (todo: Todo | null) => void;
   createTodo: (todo: string) => void;
+  errorMsg: string | null;
 };
 
 export const TodoHeader: React.FC<Props> = ({
@@ -20,6 +20,7 @@ export const TodoHeader: React.FC<Props> = ({
   updateChecked = () => {},
   createTodo = () => {},
   showError = () => {},
+  errorMsg,
 }) => {
   const [todo, setTodo] = useState<string>('');
 
@@ -60,23 +61,19 @@ export const TodoHeader: React.FC<Props> = ({
   };
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    showError('');
+    showError(null);
     setTodo(event.target.value);
   };
 
-  const onCreateTodo = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Enter') {
-      if (!todo.trim()) {
-        showError('Title should not be empty');
-        return;
-      } else {
-        createTodo(todo);
-        setTodo('');
-        showError('');
-      }
-    } else {
+  const onCreateTodo = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!todo.trim()) {
+      showError('Title should not be empty');
       return;
+    } else {
+      createTodo(todo);
     }
+    return;
   };
 
   return (
@@ -92,7 +89,7 @@ export const TodoHeader: React.FC<Props> = ({
         />
       )}
 
-      <form>
+      <form onSubmit={onCreateTodo}>
         <input
           ref={inputRef}
           data-cy="NewTodoField"
@@ -102,7 +99,6 @@ export const TodoHeader: React.FC<Props> = ({
           placeholder="What needs to be done?"
           onChange={handleChange}
           disabled={loading}
-          onKeyDown={onCreateTodo}
         />
       </form>
     </header>
